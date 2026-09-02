@@ -30,6 +30,7 @@ export type ProductInput = {
   precio_nota: string;
   specs: Spec[];
   colores: Color[];
+  color_default: number;
   imagenes: string[];
   destacado: boolean;
   destacado_texto: string;

@@ -55,6 +55,7 @@ function ProductEditor({ product }: { product: Product }) {
   const [precioNota, setPrecioNota] = useState(product.precio_nota);
   const [specs, setSpecs] = useState<Spec[]>(product.specs ?? []);
   const [colores, setColores] = useState<Color[]>(product.colores ?? []);
+  const [colorDefault, setColorDefault] = useState<number>(product.color_default ?? 0);
   const [imagenes, setImagenes] = useState<string[]>(product.imagenes ?? []);
   const [destacado, setDestacado] = useState(product.destacado);
   const [destacadoTexto, setDestacadoTexto] = useState(product.destacado_texto);
@@ -153,6 +154,7 @@ function ProductEditor({ product }: { product: Product }) {
           hex: c.hex.trim(),
           imagenes: c.imagenes ?? [],
         })),
+      color_default: Math.min(Math.max(colorDefault, 0), Math.max(colores.length - 1, 0)),
       imagenes,
       destacado,
       destacado_texto: destacadoTexto.trim() || "Más elegido",
@@ -261,6 +263,23 @@ function ProductEditor({ product }: { product: Product }) {
             Cada color muestra sus propias fotos en la web. Si un color no tiene
             fotos, se ve la silueta con ese tono.
           </div>
+          {colores.length > 0 && (
+            <div className="color-row" style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 13, color: "var(--text-dim)", whiteSpace: "nowrap" }}>
+                Color por defecto en la web
+              </label>
+              <select
+                value={Math.min(colorDefault, colores.length - 1)}
+                onChange={(e) => setColorDefault(Number(e.target.value))}
+              >
+                {colores.map((c, i) => (
+                  <option key={i} value={i}>
+                    {c.nombre || `Color ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {colores.map((c, i) => (
             <div className="color-block" key={i}>
               <div className="color-row">
@@ -396,6 +415,7 @@ function NewProductForm({ nextOrden }: { nextOrden: number }) {
         { nombre: "Rojo", hex: "#C23B22", imagenes: [] },
         { nombre: "Negro", hex: "#111111", imagenes: [] },
       ],
+      color_default: 0,
       imagenes: [],
       destacado: false,
       destacado_texto: "Más elegido",

@@ -32,7 +32,11 @@ export default function ProductCard({ product }: { product: Product }) {
       ? product.colores
       : [{ nombre: "Rojo", hex: "#C23B22" }];
 
-  const [colorIdx, setColorIdx] = useState(0);
+  const defaultColorIdx = Math.min(
+    Math.max(product.color_default ?? 0, 0),
+    colores.length - 1
+  );
+  const [colorIdx, setColorIdx] = useState(defaultColorIdx);
   const [photoIdx, setPhotoIdx] = useState(0);
 
   const activeColor = colores[colorIdx] ?? colores[0];

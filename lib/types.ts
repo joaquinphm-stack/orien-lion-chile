@@ -10,6 +10,7 @@ export type Product = {
   specs: Spec[];
   imagenes: string[];
   colores: Color[];
+  color_default: number;
   destacado: boolean;
   destacado_texto: string;
   orden: number;
