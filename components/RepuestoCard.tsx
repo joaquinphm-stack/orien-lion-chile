@@ -1,90 +1,166 @@
-import { waLink, type Repuesto, type RepuestoCategoria } from "@/lib/types";
+"use client";
 
-function CategoriaGlyph({ categoria }: { categoria: RepuestoCategoria }) {
-  const common = {
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.5,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
+import { useState } from "react";
+import { formatCLP, storageImg, waLink, type Repuesto } from "@/lib/types";
 
-  if (categoria === "bateria") {
-    return (
-      <svg {...common}>
-        <rect x="2.5" y="7" width="16" height="10" rx="1.5" />
-        <path d="M18.5 10.5h2a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-2" />
-        <path d="M6.5 10v4M9.5 10v4" />
-      </svg>
-    );
-  }
-  if (categoria === "motor") {
-    return (
-      <svg {...common}>
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
-      </svg>
-    );
-  }
-  if (categoria === "neumatico") {
-    return (
-      <svg {...common}>
-        <circle cx="12" cy="12" r="9" />
-        <circle cx="12" cy="12" r="3.5" />
-        <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
-      </svg>
-    );
-  }
+function Placeholder() {
   return (
-    <svg {...common}>
-      <path d="M3 9.5 12 4l9 5.5" />
-      <path d="M4 8.8V17l8 4 8-4V8.8" />
-      <path d="M12 12.3 4 8.8M12 12.3l8-3.5M12 12.3V21" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z" />
     </svg>
   );
 }
 
-export default function RepuestoCard({ repuesto }: { repuesto: Repuesto }) {
-  const img = repuesto.imagenes?.[0];
-  const waText = `Hola, quiero cotizar el repuesto: ${repuesto.nombre}`;
+type Props = {
+  repuesto: Repuesto;
+  isAdmin?: boolean;
+  busy?: boolean;
+  onEdit?: () => void;
+  onToggleDestacado?: () => void;
+  onToggleActivo?: () => void;
+};
+
+export default function RepuestoCard({
+  repuesto,
+  isAdmin,
+  busy,
+  onEdit,
+  onToggleDestacado,
+  onToggleActivo,
+}: Props) {
+  const fotos = repuesto.imagenes ?? [];
+  const [idx, setIdx] = useState(0);
+  const activa = fotos[Math.min(idx, Math.max(fotos.length - 1, 0))];
+  const waText = `Hola, quiero consultar por el repuesto: ${repuesto.nombre}`;
+  const tieneVolt = repuesto.voltaje.length > 0;
 
   return (
-    <article className="repuesto-card">
+    <article className={`repuesto-card${repuesto.activo ? "" : " is-hidden"}`}>
+      {isAdmin && (
+        <div className="card-admin-bar">
+          <button type="button" onClick={onEdit} disabled={busy} title="Editar ficha">
+            ✎
+          </button>
+          <button
+            type="button"
+            onClick={onToggleDestacado}
+            disabled={busy}
+            aria-pressed={repuesto.destacado}
+            title={repuesto.destacado ? "Quitar de destacados" : "Destacar"}
+          >
+            {repuesto.destacado ? "★" : "☆"}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleActivo}
+            disabled={busy}
+            aria-pressed={repuesto.activo}
+            title={repuesto.activo ? "Ocultar en la web" : "Mostrar en la web"}
+          >
+            {repuesto.activo ? "👁" : "🚫"}
+          </button>
+        </div>
+      )}
+
       <div className="repuesto-media">
-        {img ? (
+        {activa ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             className="repuesto-img"
-            src={img}
-            alt={`${repuesto.nombre} — repuesto Orient Lion`}
+            src={storageImg(activa, 640)}
+            alt={`${repuesto.nombre} — foto ${idx + 1}`}
+            loading="lazy"
+            decoding="async"
+            width={640}
+            height={480}
           />
         ) : (
           <div className="repuesto-media-empty">
-            <CategoriaGlyph categoria={repuesto.categoria} />
+            <Placeholder />
+            <span>Foto en alta resolución</span>
           </div>
         )}
       </div>
 
+      {fotos.length > 1 && (
+        <div className="repuesto-thumbs">
+          {fotos.map((f, i) => (
+            <button
+              type="button"
+              key={f}
+              className={i === idx ? "is-active" : ""}
+              aria-label={`Ver foto ${i + 1}`}
+              aria-current={i === idx}
+              onClick={() => setIdx(i)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={storageImg(f, 120)} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="repuesto-body">
+        <div className="repuesto-chips">
+          {tieneVolt ? (
+            repuesto.voltaje.map((v) => (
+              <span className="chip chip-volt" key={v}>
+                {v}
+              </span>
+            ))
+          ) : (
+            <span className="chip chip-univ">Compatibilidad universal</span>
+          )}
+        </div>
+
+        {repuesto.subcategoria && (
+          <p className="repuesto-sub">{repuesto.subcategoria}</p>
+        )}
         <h3>{repuesto.nombre}</h3>
         {repuesto.descripcion && (
           <p className="repuesto-desc">{repuesto.descripcion}</p>
         )}
-        {repuesto.compatibilidad && (
-          <p className="repuesto-compat">
-            <span className="dot" />
-            {repuesto.compatibilidad}
-          </p>
+
+        {repuesto.specs.length > 0 && (
+          <details className="repuesto-specs">
+            <summary>Especificaciones</summary>
+            <dl>
+              {repuesto.specs.map((s) => (
+                <div key={s.label}>
+                  <dt>{s.label}</dt>
+                  <dd>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
         )}
+
+        <div className="repuesto-price">
+          {repuesto.precio == null ? (
+            <span className="ask">Consultar precio</span>
+          ) : (
+            <>
+              <span className="amount">{formatCLP(repuesto.precio)}</span>
+              {repuesto.precio_nota && <span className="note">{repuesto.precio_nota}</span>}
+            </>
+          )}
+        </div>
+
         <a
-          className="btn btn-primary"
+          className="btn btn-primary repuesto-wa"
           href={waLink(waText)}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Cotizar por WhatsApp
+          Consultar por WhatsApp
         </a>
       </div>
     </article>

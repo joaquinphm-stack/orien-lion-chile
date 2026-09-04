@@ -87,6 +87,22 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Cambia solo los flags rápidos de un torito (★ destacado / 👁 visible). */
+export async function setProductFlags(
+  id: string,
+  flags: { destacado?: boolean; activo?: boolean },
+): Promise<ActionResult> {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "No autorizado." };
+
+  const { error } = await supabase.from("products").update(flags).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 export async function updateProfileName(nombre: string): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -110,8 +126,17 @@ export type RepuestoInput = {
   id: string;
   nombre: string;
   categoria: RepuestoCategoria;
+  subcategoria: string;
   descripcion: string;
   compatibilidad: string;
+  specs: Spec[];
+  precio: number | null;
+  precio_nota: string;
+  destacado: boolean;
+  voltaje: string[];
+  modelos_compatibles: string[];
+  anio_desde: number | null;
+  anio_hasta: number | null;
   imagenes: string[];
   orden: number;
   activo: boolean;
@@ -128,6 +153,7 @@ export async function saveRepuesto(input: RepuestoInput): Promise<ActionResult> 
 
   revalidatePath("/repuestos");
   revalidatePath("/admin");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -153,6 +179,7 @@ export async function createRepuesto(input: RepuestoInput): Promise<ActionResult
 
   revalidatePath("/repuestos");
   revalidatePath("/admin");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -165,5 +192,61 @@ export async function deleteRepuesto(id: string): Promise<ActionResult> {
 
   revalidatePath("/repuestos");
   revalidatePath("/admin");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+/** Cambia solo los flags rápidos de una ficha (★ destacado / 👁 visible). */
+export async function setRepuestoFlags(
+  id: string,
+  flags: { destacado?: boolean; activo?: boolean },
+): Promise<ActionResult> {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "No autorizado." };
+
+  const { error } = await supabase.from("repuestos").update(flags).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/repuestos");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+/** Guarda un texto editable del sitio (hero, categorías, secciones de /repuestos). */
+export async function saveTextoSitio(
+  clave: string,
+  valor: string,
+): Promise<ActionResult> {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "No autorizado." };
+
+  const { error } = await supabase
+    .from("textos_sitio")
+    .upsert({ clave, valor }, { onConflict: "clave" });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/repuestos");
+  return { ok: true };
+}
+
+/** Fuente y tamaño (px, escritorio) de todos los botones del sitio. */
+export async function saveButtonAppearance(
+  fuente: string,
+  tamano: number,
+): Promise<ActionResult> {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "No autorizado." };
+
+  const { error } = await supabase.from("textos_sitio").upsert(
+    [
+      { clave: "boton.fuente", valor: fuente },
+      { clave: "boton.tamano", valor: String(tamano) },
+    ],
+    { onConflict: "clave" },
+  );
+  if (error) return { ok: false, error: error.message };
+
+  // Las variables se inyectan desde el layout, así que hay que revalidarlo todo.
+  revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -7,21 +7,24 @@ import { PRODUCT_IMAGES_BUCKET } from "@/lib/supabase/config";
 import {
   createProduct,
   deleteProduct,
+  saveButtonAppearance,
   saveProduct,
-  createRepuesto,
-  deleteRepuesto,
-  saveRepuesto,
   type ProductInput,
-  type RepuestoInput,
 } from "@/app/actions";
 import {
-  REPUESTO_CATEGORIAS,
+  storageImg,
   type Color,
   type Product,
-  type Repuesto,
-  type RepuestoCategoria,
   type Spec,
 } from "@/lib/types";
+import {
+  BUTTON_FONTS,
+  BUTTON_SIZE_MAX,
+  BUTTON_SIZE_MIN,
+  clampButtonSize,
+  DEFAULT_BUTTON_FONT,
+  DEFAULT_BUTTON_SIZE,
+} from "@/lib/buttonFont";
 
 const slugify = (s: string) =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -44,6 +47,107 @@ async function uploadImage(folder: string, file: File): Promise<string> {
 }
 
 type Msg = { ok: boolean; text: string } | null;
+
+/* ------------------ ButtonAppearanceEditor ------------------ */
+
+function ButtonAppearanceEditor({
+  initialFont,
+  initialSize,
+}: {
+  initialFont: string | null;
+  initialSize: string | null;
+}) {
+  const router = useRouter();
+  const [font, setFont] = useState(
+    initialFont && BUTTON_FONTS.some((f) => f.key === initialFont)
+      ? initialFont
+      : DEFAULT_BUTTON_FONT,
+  );
+  const [size, setSize] = useState(
+    String(
+      initialSize ? clampButtonSize(Number(initialSize)) : DEFAULT_BUTTON_SIZE,
+    ),
+  );
+  const [msg, setMsg] = useState<Msg>(null);
+  const [busy, setBusy] = useState(false);
+
+  const previewStack =
+    BUTTON_FONTS.find((f) => f.key === font)?.stack ?? "inherit";
+  const previewSize = clampButtonSize(Number(size)) || DEFAULT_BUTTON_SIZE;
+
+  async function onSave() {
+    setBusy(true);
+    setMsg(null);
+    const res = await saveButtonAppearance(font, clampButtonSize(Number(size)));
+    setBusy(false);
+    if (res.ok) {
+      setMsg({ ok: true, text: "Botones actualizados. Recarga la web para verlo." });
+      router.refresh();
+    } else {
+      setMsg({ ok: false, text: res.error });
+    }
+  }
+
+  return (
+    <div className="admin-product">
+      <h3>Fuente y tamaño de los botones</h3>
+      <div className="muted">
+        Se aplica a todos los botones del sitio (landing, repuestos, formularios).
+        En móvil el tamaño se reduce a la mitad automáticamente.
+      </div>
+
+      {msg && (
+        <div className={"alert " + (msg.ok ? "alert-ok" : "alert-err")}>
+          {msg.text}
+        </div>
+      )}
+
+      <div className="admin-grid">
+        <div className="admin-field">
+          <label>Fuente</label>
+          <select value={font} onChange={(e) => setFont(e.target.value)}>
+            {BUTTON_FONTS.map((f) => (
+              <option key={f.key} value={f.key}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="admin-field">
+          <label>Tamaño en escritorio (px)</label>
+          <input
+            type="number"
+            min={BUTTON_SIZE_MIN}
+            max={BUTTON_SIZE_MAX}
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+          />
+        </div>
+        <div className="admin-field full">
+          <label>Vista previa</label>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ fontFamily: previewStack, fontSize: `${previewSize}px` }}
+          >
+            Cotizar por WhatsApp
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-actions">
+        <div style={{ flex: 1 }} />
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={onSave}
+          disabled={busy}
+        >
+          {busy ? "Guardando..." : "Guardar"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* -------------------------- ProductEditor -------------------------- */
 
@@ -306,7 +410,11 @@ function ProductEditor({ product }: { product: Product }) {
                 {(c.imagenes ?? []).map((url, j) => (
                   <div className="thumb" key={url}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`${c.nombre} foto ${j + 1}`} />
+                    <img
+                      src={storageImg(url, 200)}
+                      alt={`${c.nombre} foto ${j + 1}`}
+                      loading="lazy"
+                    />
                     <button
                       type="button"
                       onClick={() => removeColorImage(i, j)}
@@ -336,7 +444,11 @@ function ProductEditor({ product }: { product: Product }) {
             {imagenes.map((url, i) => (
               <div className="thumb" key={url}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Foto ${i + 1}`} />
+                <img
+                  src={storageImg(url, 200)}
+                  alt={`Foto ${i + 1}`}
+                  loading="lazy"
+                />
                 <button
                   type="button"
                   onClick={() =>
@@ -508,309 +620,32 @@ function NewProductForm({ nextOrden }: { nextOrden: number }) {
   );
 }
 
-/* -------------------------- RepuestoEditor -------------------------- */
-
-function RepuestoEditor({ repuesto }: { repuesto: Repuesto }) {
-  const router = useRouter();
-  const [nombre, setNombre] = useState(repuesto.nombre);
-  const [categoria, setCategoria] = useState<RepuestoCategoria>(repuesto.categoria);
-  const [descripcion, setDescripcion] = useState(repuesto.descripcion);
-  const [compatibilidad, setCompatibilidad] = useState(repuesto.compatibilidad);
-  const [imagenes, setImagenes] = useState<string[]>(repuesto.imagenes ?? []);
-  const [orden, setOrden] = useState(String(repuesto.orden));
-  const [activo, setActivo] = useState(repuesto.activo);
-
-  const [msg, setMsg] = useState<Msg>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    setBusy(true);
-    setMsg(null);
-    try {
-      const urls: string[] = [];
-      for (const f of files) urls.push(await uploadImage(`repuestos/${repuesto.id}`, f));
-      setImagenes((prev) => [...prev, ...urls]);
-      setMsg({ ok: true, text: "Foto subida. Recuerda guardar los cambios." });
-    } catch (err) {
-      setMsg({ ok: false, text: "No se pudo subir la foto: " + (err as Error).message });
-    } finally {
-      setBusy(false);
-      e.target.value = "";
-    }
-  }
-
-  async function onSave() {
-    setBusy(true);
-    setMsg(null);
-    const input: RepuestoInput = {
-      id: repuesto.id,
-      nombre: nombre.trim(),
-      categoria,
-      descripcion: descripcion.trim(),
-      compatibilidad: compatibilidad.trim(),
-      imagenes,
-      orden: Number(orden) || 0,
-      activo,
-    };
-    const res = await saveRepuesto(input);
-    setBusy(false);
-    if (res.ok) {
-      setMsg({ ok: true, text: "Cambios guardados." });
-      router.refresh();
-    } else {
-      setMsg({ ok: false, text: res.error });
-    }
-  }
-
-  async function onDelete() {
-    if (!confirm(`¿Eliminar "${repuesto.nombre}"? Esta acción no se puede deshacer.`)) return;
-    setBusy(true);
-    const res = await deleteRepuesto(repuesto.id);
-    setBusy(false);
-    if (res.ok) router.refresh();
-    else setMsg({ ok: false, text: res.error });
-  }
-
-  return (
-    <div className={"admin-product" + (activo ? "" : " inactive")}>
-      <h3>{repuesto.nombre}</h3>
-      <div className="muted">ID: {repuesto.id}</div>
-
-      {msg && (
-        <div className={"alert " + (msg.ok ? "alert-ok" : "alert-err")}>{msg.text}</div>
-      )}
-
-      <div className="admin-grid">
-        <div className="admin-field">
-          <label>Nombre</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        </div>
-        <div className="admin-field">
-          <label>Categoría</label>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as RepuestoCategoria)}
-          >
-            {REPUESTO_CATEGORIAS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="admin-field">
-          <label>Orden</label>
-          <input type="number" value={orden} onChange={(e) => setOrden(e.target.value)} />
-        </div>
-        <div className="admin-field">
-          <label>Compatibilidad</label>
-          <input
-            value={compatibilidad}
-            onChange={(e) => setCompatibilidad(e.target.value)}
-            placeholder="ej: Todos los modelos"
-          />
-        </div>
-
-        <div className="admin-field full">
-          <label>Descripción</label>
-          <textarea
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            rows={2}
-          />
-        </div>
-
-        <div className="admin-field full">
-          <label>Fotos</label>
-          <div className="thumbs">
-            {imagenes.map((url, i) => (
-              <div className="thumb" key={url}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Foto ${i + 1}`} />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImagenes((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  aria-label="Quitar foto"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-          <input type="file" accept="image/*" multiple onChange={onUpload} />
-        </div>
-      </div>
-
-      <div className="admin-actions">
-        <label className="checkline">
-          <input
-            type="checkbox"
-            checked={activo}
-            onChange={(e) => setActivo(e.target.checked)}
-          />
-          Visible en la web
-        </label>
-
-        <div style={{ flex: 1 }} />
-
-        <button className="btn btn-primary btn-sm" onClick={onSave} disabled={busy}>
-          {busy ? "Guardando..." : "Guardar cambios"}
-        </button>
-        <button className="btn btn-danger btn-sm" onClick={onDelete} disabled={busy}>
-          Eliminar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------- NewRepuestoForm ------------------------- */
-
-function NewRepuestoForm({ nextOrden }: { nextOrden: number }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [id, setId] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState<RepuestoCategoria>(
-    REPUESTO_CATEGORIAS[0].id
-  );
-  const [msg, setMsg] = useState<Msg>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg(null);
-    const input: RepuestoInput = {
-      id: id || nombre,
-      nombre: nombre.trim(),
-      categoria,
-      descripcion: "",
-      compatibilidad: "",
-      imagenes: [],
-      orden: nextOrden,
-      activo: true,
-    };
-    const res = await createRepuesto(input);
-    setBusy(false);
-    if (res.ok) {
-      setId("");
-      setNombre("");
-      setCategoria(REPUESTO_CATEGORIAS[0].id);
-      setOpen(false);
-      router.refresh();
-    } else {
-      setMsg({ ok: false, text: res.error });
-    }
-  }
-
-  if (!open) {
-    return (
-      <button className="btn btn-primary" onClick={() => setOpen(true)}>
-        + Agregar repuesto nuevo
-      </button>
-    );
-  }
-
-  return (
-    <div className="admin-product">
-      <h3>Nuevo repuesto</h3>
-      <div className="muted">
-        Créalo con los datos básicos; luego podrás agregar descripción y fotos.
-      </div>
-
-      {msg && <div className="alert alert-err">{msg.text}</div>}
-
-      <form onSubmit={onCreate} className="admin-grid">
-        <div className="admin-field">
-          <label>Identificador (slug)</label>
-          <input
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            placeholder="ej: bateria-litio"
-            required
-          />
-        </div>
-        <div className="admin-field">
-          <label>Nombre</label>
-          <input
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="ej: Batería de litio"
-            required
-          />
-        </div>
-        <div className="admin-field">
-          <label>Categoría</label>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as RepuestoCategoria)}
-          >
-            {REPUESTO_CATEGORIAS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="admin-field full">
-          <div className="inline">
-            <button className="btn btn-primary btn-sm" disabled={busy}>
-              {busy ? "Creando..." : "Crear repuesto"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setOpen(false)}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  );
-}
 
 /* --------------------------- AdminPanel --------------------------- */
 
 export default function AdminPanel({
   initialProducts,
-  initialRepuestos,
+  initialButtonFont,
+  initialButtonSize,
 }: {
   initialProducts: Product[];
-  initialRepuestos: Repuesto[];
+  initialButtonFont: string | null;
+  initialButtonSize: string | null;
 }) {
   const nextOrden =
     initialProducts.reduce((max, p) => Math.max(max, p.orden), 0) + 1;
-  const nextRepuestoOrden =
-    initialRepuestos.reduce((max, r) => Math.max(max, r.orden), 0) + 1;
 
   return (
     <div>
+      <ButtonAppearanceEditor
+        initialFont={initialButtonFont}
+        initialSize={initialButtonSize}
+      />
       {initialProducts.map((p) => (
         <ProductEditor key={p.id} product={p} />
       ))}
       <div style={{ marginTop: 32 }}>
         <NewProductForm nextOrden={nextOrden} />
-      </div>
-
-      <div className="divider" style={{ margin: "48px 0 40px" }} />
-      <h2 style={{ fontSize: 20, marginBottom: 6 }}>Repuestos</h2>
-      <p className="sub" style={{ marginBottom: 28 }}>
-        Se muestran en la página de Repuestos, agrupados por categoría. Sin precio:
-        cada uno abre WhatsApp para cotizar.
-      </p>
-      {initialRepuestos.map((r) => (
-        <RepuestoEditor key={r.id} repuesto={r} />
-      ))}
-      <div style={{ marginTop: 32 }}>
-        <NewRepuestoForm nextOrden={nextRepuestoOrden} />
       </div>
     </div>
   );

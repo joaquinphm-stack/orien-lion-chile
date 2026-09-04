@@ -19,12 +19,47 @@
   --accent-soft: rgba(37,211,102,0.12);
   --danger:      #F87171;
 
+  /* Repuestos: chip de voltaje (azul técnico) + afordancia de edición admin */
+  --volt:        #8FB4F2;
+  --volt-soft:   rgba(143,180,242,0.12);
+  --volt-border: rgba(143,180,242,0.40);
+  --edit:        #F5B841;
+
   --font-display: 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
+
+  /* Botones: fuente y tamaño editables desde /admin (el layout inyecta un
+     <style> que redefine estas variables cuando hay una preferencia guardada). */
+  --btn-font: 'Coolvetica', var(--font-display);
+  --btn-size: 17px;
 
   --radius: 14px;
   --radius-sm: 8px;
   --container: 1180px;
+  --tap: 44px;
+}
+
+/* Fuentes disponibles para los botones (se elige desde /admin). El navegador
+   solo descarga la que realmente se usa. */
+@font-face{
+  font-family: 'Coolvetica';
+  src: url('/fonts/Coolvetica.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face{
+  font-family: 'Super Bouncer';
+  src: url('/fonts/SuperBouncer.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face{
+  font-family: 'Porkys';
+  src: url('/fonts/Porkys.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face{
+  font-family: 'EpoXY History';
+  src: url('/fonts/EpoxyHistory.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 
 *{ margin:0; padding:0; box-sizing:border-box; }
@@ -136,6 +171,7 @@ header.site{
   text-decoration:none;
   font-weight:600;
   font-size: 13.5px;
+  font-family: var(--btn-font);
   white-space: nowrap;
   transition: opacity 0.15s ease;
 }
@@ -160,13 +196,16 @@ header.site{
 
 .mobile-menu{
   position:absolute;
-  top:100%; left:0; right:0;
+  top:100%; left:0; right:auto;
+  width: 70%;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   display:flex;
   flex-direction:column;
   gap: 4px;
   padding: 14px 24px 22px;
+  box-shadow: 12px 24px 48px rgba(0,0,0,0.5);
 }
 .mobile-menu a,
 .mobile-menu button{
@@ -188,6 +227,95 @@ header.site{
   margin-top: 12px;
   text-align:center;
   padding: 11px 18px;
+}
+
+/* ---- Mega menú de Repuestos (hover en desktop) ---- */
+.nav-item{ position: relative; }
+.nav-item.has-mega > a::after{ content: " ▾"; font-size: 10px; color: var(--text-faint); }
+
+.mega{
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: max-content;
+  max-width: min(760px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 22px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .16s ease, transform .16s ease;
+  z-index: 80;
+}
+.nav-item.has-mega:hover .mega,
+.nav-item.has-mega:focus-within .mega{
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+/* Evita que el panel se salga por la izquierda cerca del borde */
+@media (max-width: 1120px){
+  .mega{ left: 0; transform: translateX(0) translateY(6px); }
+  .nav-item.has-mega:hover .mega,
+  .nav-item.has-mega:focus-within .mega{ transform: translateX(0) translateY(0); }
+}
+.mega-col-head{
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+.mega-col ul{ list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.mega-col a{ font-size: 13.5px; color: var(--text-dim); }
+.mega-col a:hover{ color: var(--white); }
+
+/* ---- Acordeón de Repuestos en el menú móvil ---- */
+.m-acc-row{ display: flex; align-items: center; justify-content: space-between; }
+.m-acc-toggle{
+  min-width: var(--tap);
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-size: 20px;
+  cursor: pointer;
+}
+.m-acc-body{ padding: 2px 0 8px 12px; display: flex; flex-direction: column; }
+/* Cada categoría madre es a su vez un acordeón (sub-submenú). */
+.m-acc-cat-group{ border-top: 1px solid var(--border); }
+.m-acc-cat-group:first-child{ border-top: none; }
+.m-acc-cat-row{ gap: 8px; }
+.m-acc-cat{
+  flex: 1;
+  font-weight: 600 !important;
+  color: var(--white) !important;
+  padding: 11px 0 !important;
+}
+.m-acc-toggle-sm{
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 16px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+.m-acc-subs{ display: flex; flex-direction: column; padding: 0 0 8px 12px; }
+.m-acc-sub{
+  font-size: 14px !important;
+  padding: 9px 0 9px 12px !important;
+  min-height: var(--tap);
 }
 
 /* ======================================================
@@ -259,16 +387,20 @@ header.site{
 .btn{
   display:inline-flex;
   align-items:center;
+  justify-content:center;
   gap:10px;
   padding: 14px 24px;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 15px;
+  /* Fuente y tamaño de todos los botones: editables desde /admin. */
+  font-family: var(--btn-font);
+  font-size: var(--btn-size);
+  line-height: 1.15;
+  text-align: center;
   text-decoration:none;
   border: 1px solid transparent;
   cursor:pointer;
   transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
-  font-family: var(--font-body);
 }
 .btn:hover{ transform: translateY(-1px); }
 .btn:disabled{ opacity: .5; cursor: not-allowed; transform:none; }
@@ -285,7 +417,7 @@ header.site{
 .btn-danger{ background: transparent; border-color: rgba(248,113,113,.4); color: var(--danger); }
 .btn-danger:hover{ border-color: var(--danger); }
 
-.btn-sm{ padding: 9px 16px; font-size: 13.5px; }
+.btn-sm{ padding: 9px 16px; font-size: calc(var(--btn-size) - 2px); }
 
 .hero-stats{
   display:flex;
@@ -350,6 +482,79 @@ header.site{
   border-radius: 999px;
 }
 .plate-caption .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+/* ------------------------------------------------------
+   HERO SHOWCASE (torito multicolor con transición)
+   ------------------------------------------------------ */
+@keyframes ol-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ol-glow-pulse {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
+
+.hero-showcase{
+  display:flex;
+  flex-direction:column;
+  gap: 28px;
+  align-items:center;
+}
+.hero-showcase-stage{
+  position:relative;
+  width:100%;
+  aspect-ratio: 1619 / 972;
+}
+.hero-showcase-glow{
+  position:absolute;
+  inset: 8% 6%;
+  border-radius: 999px;
+  filter: blur(60px);
+  animation: ol-glow-pulse 6s ease-in-out infinite;
+  pointer-events:none;
+}
+.hero-showcase-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 40px rgba(0,0,0,.55));
+  will-change: opacity, transform;
+  transition: opacity 1.4s cubic-bezier(.4,0,.2,1),
+              transform 1.8s cubic-bezier(.22,1,.36,1);
+}
+.hero-showcase-swatches{
+  display:flex;
+  align-items:center;
+  gap: 20px;
+}
+.hero-showcase-swatches button{
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  transition: transform .12s ease, box-shadow .15s ease;
+}
+.hero-showcase-swatches button:hover{ transform: scale(1.08) !important; }
+.hero-showcase-caption{
+  display:inline-flex;
+  align-items:center;
+  gap: 10px;
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.hero-showcase-caption .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent); }
 
 /* ======================================================
    SECCIONES GENÉRICAS
@@ -671,37 +876,317 @@ header.site{
 .alert-err{ background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.5); color: #FCA5A5; }
 
 /* ======================================================
-   REPUESTOS
+   REPUESTOS  (mobile-first)
+   Base = móvil (1 columna). Los @media (min-width) escalan
+   hacia tablet/desktop. Toda superficie táctil >= var(--tap).
    ====================================================== */
-.repuestos-intro .section-head{ max-width: 680px; margin-bottom: 8px; }
-.repuestos-intro .section-head h1{
-  font-size: clamp(30px, 4vw, 46px);
-  margin-bottom: 16px;
+.rep{ color: var(--text); }
+.rep .container{ width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 20px; }
+
+/* ---- Hero (handoff /repuestos) ---- */
+.rep-hero{
+  position: relative;
+  overflow: hidden;
+  padding: 56px 0 52px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
-.repuestos-intro .section-head p{ color: var(--text-dim); font-size: 16.5px; }
-.repuestos-intro-cta{ margin-top: 28px; }
+.rep-hero-glow{
+  position: absolute;
+  top: -24%; right: -8%;
+  width: 640px; height: 640px;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+.rep-hero-in{
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 36px;
+  align-items: center;
+}
+.rep-eyebrow{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  margin-bottom: 22px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.rep-eyebrow .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.rep-hero-h1{
+  font-size: clamp(32px, 8vw, 58px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 22px;
+  text-wrap: pretty;
+}
+.rep-hero-h1 .faint{ color: var(--text-faint); }
+.rep-hero-lead{
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 46ch;
+  margin: 0 0 34px;
+}
+.rep-hero-ctas{ display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+.rep-hero-ctas .btn{ min-height: var(--tap); }
 
-.repuesto-cat{ margin-top: 60px; }
-.repuesto-cat-head{ margin-bottom: 26px; }
-.repuesto-cat-head h2{ font-size: clamp(21px, 2.6vw, 27px); margin-bottom: 6px; }
-.repuesto-cat-head p{ color: var(--text-dim); font-size: 14.5px; }
-
-.repuestos-grid{
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+/* ---- Buscador: sección propia entre el hero y las categorías ---- */
+.rep-searchbar{
+  /* Sin sticky: se desplaza con la página al hacer scroll. */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 36px 0 0;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.rep-q{
+  width: 100%;
+  min-height: var(--tap);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font: inherit;
+  font-size: 15px;
+  padding: 0 14px;
+}
+.rep-q::placeholder{ color: var(--text-faint); }
+.rep-facets{ display: grid; grid-template-columns: 1fr; gap: 10px; }
+.rep-facets select{
+  width: 100%;
+  min-height: var(--tap);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font: inherit;
+  font-size: 14.5px;
+  padding: 0 12px;
+}
+.rep-clear{
+  align-self: flex-start;
+  min-height: var(--tap);
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--white);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 0 18px;
+  cursor: pointer;
 }
 
+.rep-hero-media{ position: relative; }
+
+/* ---- Carrusel de repuestos del hero ---- */
+.rep-showcase{ position: relative; }
+.rep-showcase-glow{
+  position: absolute;
+  left: 50%; top: 40%;
+  width: 104%; height: 78%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(150,170,255,.14);
+  filter: blur(40px);
+  animation: ol-glow-pulse 6s ease-in-out infinite;
+  pointer-events: none;
+}
+/* Sin marco ni fondo: la foto va recortada sobre el negro, igual que el
+   torito del hero de la landing. */
+.rep-showcase-stage{
+  position: relative;
+  height: 300px;
+}
+.rep-showcase-slide{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.rep-showcase-slide img{
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,.5));
+  transition: opacity .5s ease, transform .8s cubic-bezier(.22,1,.36,1);
+  will-change: opacity, transform;
+}
+.rep-showcase-plates{
+  position: relative;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 22px;
+}
+.rep-showcase-plates button{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.rep-showcase-plates button.is-active{
+  background: rgba(255,255,255,.06);
+  border-color: var(--border-strong);
+  color: var(--white);
+}
+.rep-plate-dot{
+  width: 6px; height: 6px; border-radius: 999px; flex: none;
+  background: var(--border-strong);
+}
+.rep-showcase-plates button.is-active .rep-plate-dot{ background: var(--accent); }
+.rep-showcase-caption-wrap{
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  min-height: 34px;
+}
+.rep-showcase-caption{
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+  line-height: 1.3;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ---- Cuadrícula de categorías madre ---- */
+.rep-cats{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding-top: 40px;
+  padding-bottom: 8px;
+}
+.rep-cat-card{
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s ease, transform .12s ease;
+}
+.rep-cat-card:hover{ border-color: var(--border-strong); transform: translateY(-2px); }
+.rep-cat-card svg{ width: 30px; height: 30px; color: var(--accent); margin-bottom: 14px; }
+.rep-cat-card h3{ font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.rep-cat-card p{ color: var(--text-dim); font-size: 13.5px; }
+
+/* ---- Secciones ---- */
+.rep-section{ padding: 44px 0; }
+.rep-section-alt{ background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.rep-section h2{ font-size: clamp(21px, 4.5vw, 28px); font-weight: 600; margin-bottom: 8px; }
+.rep-section-lead{ color: var(--text-dim); font-size: 14.5px; margin-bottom: 26px; }
+
+.rep-results-head{ display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 24px; }
+.rep-results-head h2{ margin: 0; }
+
+.rep-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+.rep-cat-block{ margin-top: 40px; scroll-margin-top: 90px; }
+.rep-cat-block:first-of-type{ margin-top: 0; }
+.rep-cat-block-head{ display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.rep-cat-block-head h2{ margin: 0; }
+.rep-add{
+  min-height: var(--tap);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rep-subcat{ margin-top: 22px; scroll-margin-top: 90px; }
+.rep-subcat-head{
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rep-empty{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 36px 24px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.rep-empty p{ margin: 0 auto 20px; max-width: 46ch; }
+
+/* ---- Tarjeta de repuesto ---- */
 .repuesto-card{
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  display:flex;
-  flex-direction:column;
-  transition: border-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .15s ease;
 }
 .repuesto-card:hover{ border-color: var(--border-strong); }
+.repuesto-card.is-hidden{ opacity: .5; }
+
+.card-admin-bar{
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+.card-admin-bar button{
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.66);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 14px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.card-admin-bar button[aria-pressed="true"]{ border-color: var(--edit); color: var(--edit); }
+.card-admin-bar button:disabled{ opacity: .5; cursor: not-allowed; }
 
 .repuesto-media{
   position: relative;
@@ -709,60 +1194,371 @@ header.site{
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
 }
-.repuesto-img{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  object-fit: cover;
-}
+.repuesto-img{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .repuesto-media-empty{
-  position:absolute; inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
   color: var(--text-faint);
 }
-.repuesto-media-empty svg{ width: 44px; height: 44px; }
+.repuesto-media-empty svg{ width: 40px; height: 40px; }
+.repuesto-media-empty span{ font-size: 11px; }
 
-.repuesto-body{
-  padding: 22px;
-  display:flex;
-  flex-direction:column;
-  flex:1;
+.repuesto-thumbs{
+  display: flex;
+  gap: 6px;
+  padding: 8px 8px 0;
+  overflow-x: auto;
 }
-.repuesto-body h3{ font-size: 17px; font-weight: 600; margin-bottom: 8px; }
-.repuesto-desc{ color: var(--text-dim); font-size: 14px; margin-bottom: 14px; }
-.repuesto-compat{
-  display:flex;
-  gap: 8px;
-  align-items:flex-start;
-  color: var(--text-dim);
-  font-size: 12.5px;
-  margin-bottom: 20px;
-}
-.repuesto-compat .dot{
-  width:6px; height:6px; border-radius:50%;
-  background: var(--accent);
-  margin-top: 6px;
-  flex-shrink:0;
-}
-.repuesto-body .btn{ margin-top: auto; justify-content:center; width:100%; }
-
-.repuestos-empty{
+.repuesto-thumbs button{
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  padding: 44px 40px;
-  text-align:center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.repuesto-thumbs button.is-active{ border-color: var(--white); }
+.repuesto-thumbs img{ width: 100%; height: 100%; object-fit: cover; }
+
+.repuesto-body{ padding: 18px; display: flex; flex-direction: column; flex: 1; }
+.repuesto-chips{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
   color: var(--text-dim);
 }
-.repuestos-empty p{ margin: 0 auto 22px; max-width: 46ch; }
+.chip-volt{ background: var(--volt-soft); border-color: var(--volt-border); color: var(--volt); }
+.chip-univ{ background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
-@media (max-width: 960px){
-  .repuestos-grid{ grid-template-columns: repeat(2, 1fr); }
+.repuesto-sub{ font-size: 12px; color: var(--text-faint); margin-bottom: 4px; }
+.repuesto-body h3{ font-size: 16.5px; font-weight: 600; margin-bottom: 8px; }
+.repuesto-desc{
+  color: var(--text-dim);
+  font-size: 13.5px;
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
 }
-@media (max-width: 640px){
-  .repuestos-grid{ grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
-  .repuesto-cat{ margin-top: 44px; }
+
+.repuesto-specs{ margin-bottom: 14px; border-top: 1px solid var(--border); }
+.repuesto-specs summary{
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.repuesto-specs summary::-webkit-details-marker{ display: none; }
+.repuesto-specs summary::after{ content: " +"; color: var(--text-faint); }
+.repuesto-specs[open] summary::after{ content: " –"; }
+.repuesto-specs dl{ display: grid; gap: 6px; padding: 8px 0 4px; }
+.repuesto-specs dl > div{
+  display: grid;
+  grid-template-columns: 40% 1fr;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.repuesto-specs dt{ color: var(--text-faint); }
+.repuesto-specs dd{ color: var(--text-dim); }
+
+.repuesto-price{ margin: auto 0 14px; }
+.repuesto-price .amount{ display: block; font-size: 20px; font-weight: 700; color: var(--white); }
+.repuesto-price .note{ display: block; font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+.repuesto-price .ask{ display: block; font-size: 15px; font-weight: 600; color: var(--text-dim); }
+
+.repuesto-wa{ margin-top: auto; justify-content: center; width: 100%; min-height: var(--tap); }
+
+/* ---- Texto editable (admin) ---- */
+.rep-editable{ position: relative; cursor: pointer; border-radius: 4px; transition: box-shadow .12s ease; }
+.rep-editable:hover{ box-shadow: 0 0 0 2px var(--edit); }
+.rep-editable-pen{ font-size: .7em; color: var(--edit); margin-left: 8px; vertical-align: middle; }
+.rep-edit-text{ display: flex; flex-direction: column; gap: 10px; margin: 6px 0; }
+.rep-edit-text textarea{
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--edit);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+}
+.rep-edit-text-actions{ display: flex; gap: 10px; }
+
+/* ---- Drawer de edición de ficha ---- */
+.rep-drawer-wrap{ position: fixed; inset: 0; z-index: 120; display: flex; justify-content: flex-end; }
+.rep-drawer-scrim{ position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.rep-drawer{
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  max-height: 100dvh;
+}
+.rep-drawer-head{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.rep-drawer-x{
+  min-width: var(--tap); min-height: var(--tap);
+  background: none; border: none; color: var(--white);
+  font-size: 20px; cursor: pointer;
+}
+.rep-drawer-body{ padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.rep-drawer-body label{
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.rep-drawer-body input,
+.rep-drawer-body select,
+.rep-drawer-body textarea{
+  width: 100%;
+  min-height: var(--tap);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.rep-drawer-body textarea{ min-height: 72px; }
+.rep-drawer-row{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rep-drawer-specs{ display: flex; flex-direction: column; gap: 8px; }
+.rep-drawer-specs-title{
+  font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.rep-spec-row{ display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+.rep-spec-x{
+  width: 34px; height: 34px;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-dim); cursor: pointer; font-size: 12px;
+}
+
+.rep-fotos{ display: flex; flex-wrap: wrap; gap: 10px; }
+.rep-foto{
+  position: relative;
+  width: 84px; height: 84px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.rep-foto img{ width: 100%; height: 100%; object-fit: cover; }
+.rep-foto-x,
+.rep-foto-main{
+  position: absolute;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0,0,0,.72);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rep-foto-x{ top: 3px; right: 3px; }
+.rep-foto-main{ top: 3px; left: 3px; color: var(--edit); }
+.rep-foto-tag{
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%;
+  background: rgba(0,0,0,.72);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 2px 0;
+}
+.rep-foto-upload{
+  align-self: flex-start;
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.rep-foto-upload input{ display: none; }
+.rep-drawer-checks{ border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.rep-drawer-checks legend{ font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); padding: 0 6px; }
+.rep-check{
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 13.5px !important;
+  color: var(--text) !important;
+}
+.rep-check input{ width: 18px !important; height: 18px !important; min-height: 0 !important; }
+.rep-drawer-foot{
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.rep-drawer-foot-sp{ flex: 1; }
+
+.rep-toast{
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--white);
+  color: var(--bg);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  z-index: 130;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+
+@media (min-width: 600px){
+  .rep-searchbar{ flex-direction: row; align-items: center; }
+  .rep-searchbar .rep-q{ flex: 1 1 240px; }
+  .rep-facets{ grid-template-columns: repeat(3, 1fr); flex: 2 1 360px; }
+  .rep-grid{ grid-template-columns: repeat(2, 1fr); }
+  .rep-cats{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px){
+  .rep-hero{ padding: 88px 0 84px; }
+  .rep-hero-in{ grid-template-columns: 0.92fr 1.08fr; gap: 48px; }
+  .rep-showcase-stage{ height: 400px; }
+  .rep-cats{ grid-template-columns: repeat(4, 1fr); padding-top: 56px; }
+  .rep-grid{ grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .rep-section{ padding: 64px 0; }
+}
+@media (min-width: 1200px){
+  .rep-grid{ grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ---- Hero de /repuestos en móvil: misma composición que la landing ----
+   eyebrow a ancho completo, título junto a la foto, botones apilados bajo el
+   título y las cifras a lo ancho. La foto va sin marco (regla base ya lo
+   quita) y sangra hasta el borde derecho. */
+@media (max-width: 720px){
+  .rep-hero{ padding: 26px 0 40px; }
+  .rep-hero-in{
+    grid-template-columns: 1fr 56%;
+    column-gap: 10px;
+    row-gap: 0;
+    align-items: start;
+  }
+  .rep-hero-copy{ display: contents; }
+  .rep-eyebrow{
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 14px;
+    font-size: 10px;
+    letter-spacing: .06em;
+    padding: 6px 12px;
+  }
+  .rep-hero-h1{
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    font-size: clamp(15px, 4.1vw, 22px);
+    line-height: 1.12;
+    margin: 0;
+  }
+  .rep-hero-media{
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    align-self: center;
+  }
+  .rep-hero-lead{ display: none; }
+  .rep-hero-ctas{
+    grid-column: 1;
+    grid-row: 3;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 12px 0 0;
+  }
+  /* La pastilla se ajusta al texto (el relleno de color queda pequeño) en vez
+     de ocupar toda la columna. */
+  .rep-hero-ctas .btn,
+  .hero-ctas .btn{
+    width: auto;
+    max-width: 100%;
+    padding: 3px 8px !important;
+    gap: 3px !important;
+  }
+  /* Ícono de WhatsApp más chico para que "Cotizar por WhatsApp" no infle el
+     botón (evita que se parta en dos líneas). */
+  .rep-hero-ctas .btn svg,
+  .hero-ctas .btn svg{ width: 1em; height: 1em; }
+  /* En /repuestos el botón dice solo "Cotizar por WhatsApp" y su pastilla verde
+     es algo más chica (mismo aspecto, escala menor). */
+  .rep-wa-detail{ display: none; }
+  .rep-hero-ctas .btn{
+    padding: 2px 7px !important;
+    gap: 2px !important;
+    font-size: calc(var(--btn-size) / 2 * 0.9) !important;
+  }
+  .rep-hero-ctas .btn svg{ width: 0.95em; height: 0.95em; }
+  .rep-hero .hero-stats{
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: 18px;
+  }
+  .rep-showcase-stage{
+    height: auto;
+    aspect-ratio: 1280 / 853;
+    width: calc(100% + 20px);
+    margin-right: -20px;
+  }
+  .rep-showcase-plates{ display: none; }
+  .rep-showcase-caption-wrap{ display: none; }
+
+  /* En móvil el buscador muestra solo la caja de texto (se ocultan los
+     filtros de modelo/año/voltaje y el botón de limpiar). */
+  .rep-searchbar > :not(.rep-q){ display: none; }
+  .rep-searchbar{ padding: 10px; }
+
+  /* ---- Orden móvil de /repuestos ----
+     hero → buscador → catálogo completo → los más buscados → categorías.
+     (En escritorio el orden es el del DOM: hero → buscador → categorías →
+     los más buscados → catálogo completo.) */
+  .rep{ display: flex; flex-direction: column; }
+  .rep > .rep-hero{ order: 1; }
+  .rep > #buscador{ order: 2; }
+  .rep > #catalogo{ order: 3; }
+  .rep > .rep-section-alt{ order: 4; }
+  .rep > .rep-cats{ order: 5; }
 }
 
 /* ======================================================
@@ -950,27 +1746,341 @@ footer.site{
 .checkline input{ width: 16px; height: 16px; }
 
 /* ======================================================
+   LANDING: ADMIN DE TORITOS + REPUESTOS DESTACADOS
+   ====================================================== */
+.models-admin-head{ display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.model-card.is-hidden{ opacity: .5; }
+
+/* Bloque de repuestos bajo los toritos: 3 + 3 */
+.home-repuestos{ margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border); }
+.home-repuestos-head{
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.home-repuestos-head h3{ font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.home-repuestos-head p{ color: var(--text-dim); font-size: 14.5px; }
+/* .rep-grid pasa a 4 columnas en pantallas grandes; aquí se mantiene en 3
+   para que los 6 repuestos queden en dos filas de tres, como los toritos. */
+@media (min-width: 1200px){
+  .home-rep-grid{ grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Orden de la landing (escritorio y móvil): hero → catálogo (toritos +
+   repuestos) → cómo trabajamos → testimonios → contacto. El catálogo se
+   adelanta a "Cómo trabajamos" con `order` para no reescribir el DOM. */
+.home{ display: flex; flex-direction: column; }
+.home > .hero{ order: 1; }
+.home > .divider-hero{ order: 2; }
+.home > #modelos{ order: 3; }
+.home > #servicios{ order: 4; }
+.home > #testimonios{ order: 5; }
+.home > .divider-contacto{ order: 6; }
+.home > #contacto{ order: 7; }
+/* Servicios y testimonios quedan seguidos con el mismo fondo: una línea los
+   separa (antes los separaba el bloque de modelos). */
+.home > #testimonios{ border-top: 1px solid var(--border); }
+
+/* Colores dentro del drawer de un torito */
+.rep-color-block{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rep-drawer-body input.rep-color-dot{ padding: 4px; min-height: var(--tap); cursor: pointer; }
+
+/* ======================================================
    RESPONSIVE
    ====================================================== */
 @media (max-width: 960px){
-  .hero-grid{ grid-template-columns: 1fr; }
+  .hero-grid{ grid-template-columns: 1fr; gap: 28px; }
   .hero-plate{ order:-1; max-width: 420px; margin: 0 auto 12px; }
+  /* El torito, sus colores y el indicador de modelo van arriba, como en el
+     escritorio pero apilados: primero la imagen, después el texto. */
+  .hero-showcase{ order:-1; width: 100%; max-width: 460px; margin: 0 auto; }
   .services-grid{ grid-template-columns: repeat(2,1fr); }
-  .models-grid{ grid-template-columns: 1fr; max-width: 420px; margin:0 auto; }
+  /* Tablet: dos modelos por fila en vez de uno gigante. */
+  .models-grid{ grid-template-columns: repeat(2, 1fr); max-width: none; }
   .testi-grid{ grid-template-columns: 1fr; }
   .contact-grid{ grid-template-columns: 1fr; }
   .admin-grid{ grid-template-columns: 1fr; }
 }
 
-@media (max-width: 820px){
+/* Entre 768 y 1023px el nav de escritorio ya está visible pero el desplegable
+   de repuestos (728px) no cabe y, aun oculto, generaba 342px de scroll
+   horizontal. El enlace sigue llevando a /repuestos. */
+@media (max-width: 1023px){
+  .mega{ display: none; }
+}
+
+/* El nav de escritorio necesita ~930px para no desbordar (enlaces + acceso +
+   CTA); por debajo de eso se usa el menú hamburguesa, que ya trae las mismas
+   secciones y las categorías de repuestos. */
+@media (max-width: 940px){
   .nav-links{ display:none; }
   .nav-right{ display:none; }
-  .nav-toggle{ display:block; }
+  /* En móvil el botón del menú va a la izquierda y el logo ORIENT LION a la
+     derecha (se intercambian). */
+  .nav-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    order: -1;
+  }
 }
 
 @media (max-width: 720px){
-  .services-grid{ grid-template-columns: 1fr; }
   .form-cols{ grid-template-columns: 1fr; }
-  .hero{ padding: 56px 0 64px; }
-  .section{ padding: 64px 0; }
+  .section{ padding: 52px 0; }
+
+  .section-head{ margin-bottom: 26px; }
+  .section-head h2{ font-size: 26px; }
+  .section-head p{ font-size: 15px; }
+
+  /* ---------- BOTONES EN MÓVIL ----------
+     Todos los botones del proyecto (landing, /repuestos, formularios, fichas,
+     admin…) se reducen a la mitad del tamaño de escritorio (que se controla
+     desde /admin con --btn-size). `!important` porque varios componentes fijan
+     su propio tamaño con más especificidad. */
+  .btn{
+    font-size: calc(var(--btn-size) / 2) !important;
+    padding: 7px 12px !important;
+    gap: 5px !important;
+    min-height: 0 !important;
+  }
+  .btn-sm{ font-size: calc(var(--btn-size) / 2 - 1px) !important; padding: 5px 9px !important; }
+  .nav-cta{ font-size: calc(var(--btn-size) / 2) !important; padding: 6px 12px !important; }
+  /* El "Cotizar" blanco del menú hamburguesa se ajusta a su texto: el relleno
+     blanco queda pequeño y centrado, no ocupa todo el ancho del panel. */
+  .mobile-menu .nav-cta{
+    align-self: center;
+    width: auto;
+    padding: 4px 14px !important;
+  }
+
+  /* ---------- HERO MÓVIL ----------
+     Mismo orden visual que el escritorio (torito → colores → modelo →
+     titular → botones → cifras), pero compacto: antes el hero medía ~1160px
+     y empujaba los modelos casi 3 pantallas hacia abajo. */
+  /* Hero móvil con la misma composición del escritorio: la frase a la
+     izquierda y el torito a la derecha. El bloque de texto usa
+     `display:contents` para que sus hijos se coloquen directamente en la
+     grilla; así el titular puede ir junto a la imagen mientras la bajada, los
+     botones y las cifras siguen ocupando todo el ancho (en una columna de
+     ~190px los botones y las estadísticas quedarían inutilizables). */
+  .hero{ padding: 26px 0 42px; }
+  .hero-grid{
+    grid-template-columns: 1fr 56%;
+    column-gap: 10px;
+    row-gap: 0;
+    align-items: start;
+  }
+  .hero-grid > div:first-child{ display: contents; }
+  /* El eyebrow ocupa el ancho completo (en la columna angosta se partía en
+     tres líneas); titular y torito comparten la fila siguiente, centrados
+     entre sí como en el escritorio. */
+  .hero-eyebrow{
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 14px;
+    font-size: 10.5px;
+    letter-spacing: .06em;
+    padding: 6px 12px;
+  }
+  .hero h1{
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    font-size: clamp(15px, 4.1vw, 22px);
+    line-height: 1.12;
+    margin-bottom: 0;
+  }
+  .hero-showcase{
+    order: 0;
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    align-self: center;
+    gap: 10px;
+    max-width: 100%;
+    margin: 0;
+  }
+  /* La foto se extiende hasta el borde derecho de la pantalla: gana un 15% de
+     tamaño sin robarle ancho al titular. Los colores y el indicador quedan
+     centrados en la columna, como en escritorio. */
+  .hero-showcase-stage{ width: calc(100% + 24px); margin-right: -24px; }
+  /* En móvil los colores del hero se ocultan: el torito sigue rotando solo
+     entre los cuatro tonos y el indicador de abajo dice cuál se está viendo.
+     La elección de color por modelo se mantiene en las tarjetas del catálogo. */
+  .hero-showcase-swatches{ display: none; }
+  /* En móvil el hero se queda solo con el titular y el torito: el indicador de
+     color/modelo y la bajada se ocultan (el detalle está en las tarjetas del
+     catálogo, que sí se editan y comparan). */
+  .hero-showcase-caption{ display: none; }
+  .hero p.lead{ display: none; }
+  /* Botones apilados en la columna del título, bajo la frase: "Ver modelos"
+     arriba (destacado) y WhatsApp abajo. Reducidos a ~1/3, mismo ancho y
+     texto centrado. */
+  .hero-ctas{
+    grid-column: 1;
+    grid-row: 3;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 12px 0 0;
+  }
+  .hero-ctas .btn{ flex: 0 0 auto; }
+  .hero-stats{
+    grid-column: 1 / -1;
+    grid-row: 4;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding-top: 20px;
+  }
+  .hero-stats .num{ font-size: 22px; }
+  .hero-stats .label{ font-size: 11.5px; margin-top: 6px; line-height: 1.35; }
+
+  /* ---------- SERVICIOS ----------
+     Dos columnas compactas: apilados de a uno sumaban 1300px de scroll
+     entre el hero y el catálogo. */
+  .services-grid{ grid-template-columns: repeat(2, 1fr); }
+  .service-card{ padding: 18px 16px; }
+  .icon-tile{ width: 38px; height: 38px; margin-bottom: 12px; }
+  .icon-tile svg{ width: 19px; height: 19px; }
+  .service-card h3{ font-size: 15px; margin-bottom: 6px; }
+  .service-card p{ font-size: 13px; }
+
+  /* ---------- CATÁLOGO: CARRUSEL ----------
+     Los 3 toritos siguen presentes y con la foto grande, pero se recorren
+     deslizando en horizontal en vez de apilarse en 2300px de alto.
+     El margen negativo sangra la pista hasta el borde de la pantalla para
+     que asome la tarjeta siguiente. */
+  .models-grid,
+  .home-rep-grid{
+    display: flex;
+    grid-template-columns: none;
+    max-width: none;
+    gap: 14px;
+    margin: 0 -24px;
+    padding: 2px 24px 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 24px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .models-grid::-webkit-scrollbar,
+  .home-rep-grid::-webkit-scrollbar{ display: none; }
+  /* Dos tarjetas por pantalla (y un tercio de la siguiente asomando). La foto
+     conserva su relación 4/3, así que los tres toritos siguen a la misma
+     escala; lo que baja es el tamaño de la tarjeta y su tipografía. */
+  .models-grid > .model-card,
+  .home-rep-grid > .repuesto-card{
+    flex: 0 0 45%;
+    max-width: 230px;
+    scroll-snap-align: start;
+  }
+
+  /* Tarjeta de modelo compacta (sin quitar datos: foto, colores, capacidad,
+     precio, características y botón siguen ahí). */
+  .featured-tag{ top: 8px; left: 8px; font-size: 9px; padding: 3px 7px; }
+  .model-plate{ padding: 9px 12px; }
+  .model-plate .plate-label,
+  .model-plate .plate-value{ font-size: 10.5px; }
+  .color-swatches{ padding: 9px 10px; gap: 5px; flex-wrap: wrap; }
+  .color-swatches .swatch-label{ font-size: 9.5px; margin-right: 0; }
+  .swatch{ width: 16px; height: 16px; border-width: 1.5px; }
+  .model-body{ padding: 12px; }
+  .model-body h3{ font-size: 15px; }
+  .model-price{ font-size: 19px; margin: 6px 0 10px; }
+  .model-price small{ font-size: 10px; }
+  .model-specs{ font-size: 10.5px; margin-bottom: 12px; }
+  .model-specs li{ padding: 5px 0; gap: 6px; }
+  /* El valor (500 kg, 2,70 m) nunca se parte; si falta espacio cede la etiqueta. */
+  .model-specs li span:last-child{ white-space: nowrap; }
+  /* El botón "Cotizar este modelo" se ajusta a su texto y va centrado: el
+     relleno verde queda pequeño, no ocupa todo el ancho de la tarjeta. */
+  .model-card .btn{
+    width: auto;
+    max-width: 100%;
+    align-self: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 3px 10px !important;
+  }
+
+  /* Tarjeta de repuesto a la misma escala */
+  .repuesto-body{ padding: 12px; }
+  .repuesto-chips{ margin-bottom: 8px; }
+  .chip{ font-size: 9px; padding: 3px 7px; }
+  .repuesto-sub{ font-size: 10.5px; }
+  .repuesto-body h3{ font-size: 14px; margin-bottom: 6px; }
+  .repuesto-desc{ font-size: 11.5px; }
+  .repuesto-specs{ margin-bottom: 10px; }
+  .repuesto-specs summary{ font-size: 10.5px; }
+  .repuesto-specs dl > div{ font-size: 10.5px; }
+  .repuesto-price{ margin: auto 0 10px; }
+  .repuesto-price .amount{ font-size: 16px; }
+  .repuesto-price .note{ font-size: 10px; }
+  .repuesto-price .ask{ font-size: 12.5px; }
+  /* Igual que el de los toritos: la pastilla verde de "Consultar por WhatsApp"
+     se ajusta al texto y va centrada. */
+  .repuesto-wa{
+    width: auto;
+    max-width: 100%;
+    align-self: center;
+    min-height: 0;
+    padding: 3px 10px !important;
+  }
+  .repuesto-specs dl > div{ gap: 6px; }
+  .repuesto-specs dd{ white-space: nowrap; }
+
+  .home-repuestos{ margin-top: 36px; padding-top: 28px; }
+  .home-repuestos-head h3{ font-size: 18px; }
+  .home-repuestos-head p{ font-size: 13.5px; }
+}
+
+/* Puntos de navegación del carrusel (solo móvil) */
+.models-nav{ display: none; }
+@media (max-width: 720px){
+  .models-nav{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .models-nav button{
+    width: 26px;
+    height: 4px;
+    border: none;
+    border-radius: 999px;
+    padding: 0;
+    background: rgba(255,255,255,0.22);
+    cursor: pointer;
+    transition: background .15s ease, width .15s ease;
+  }
+  .models-nav button[aria-current="true"]{ width: 40px; background: var(--white); }
+}
+
+/* Pantallas muy angostas (320–360px) */
+@media (max-width: 360px){
+  .container{ padding: 0 18px; }
+  .models-grid,
+  .home-rep-grid{ margin: 0 -18px; padding-left: 18px; padding-right: 18px; scroll-padding-left: 18px; }
+  .hero-showcase-stage{ width: calc(100% + 18px); margin-right: -18px; }
+  .hero-stats{ gap: 8px; }
+  .hero-stats .num{ font-size: 19px; }
+  .hero-stats .label{ font-size: 10px; }
+  .models-grid > .model-card,
+  .home-rep-grid > .repuesto-card{ flex-basis: 46%; }
 }

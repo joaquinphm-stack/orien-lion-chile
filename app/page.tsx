@@ -1,12 +1,13 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import ProductCard from "@/components/ProductCard";
+import ModelosClient from "@/components/home/ModelosClient";
+import RepuestoCard from "@/components/RepuestoCard";
 import ContactForm from "@/components/ContactForm";
-import { waLink, type Product } from "@/lib/types";
+import HeroShowcase from "@/components/HeroShowcase";
+import WaGlyph from "@/components/WaGlyph";
+import { waLink, type Product, type Repuesto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const HERO_IMG =
-  "https://jozqjwkutcqeiereobun.supabase.co/storage/v1/object/public/product-images/site/hero-torito.png";
 
 const TESTIMONIOS = [
   {
@@ -37,16 +38,43 @@ const TESTIMONIOS = [
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("products")
-    .select("*")
-    .eq("activo", true)
-    .order("orden", { ascending: true });
 
-  const products = (data ?? []) as Product[];
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    isAdmin = profile?.role === "admin";
+  }
+
+  // El admin también ve los toritos ocultos, para poder volver a publicarlos.
+  let query = supabase.from("products").select("*").order("orden", { ascending: true });
+  if (!isAdmin) query = query.eq("activo", true);
+
+  const [{ data: productData }, { data: repuestoData }] = await Promise.all([
+    query,
+    supabase
+      .from("repuestos")
+      .select("*")
+      .eq("activo", true)
+      .order("destacado", { ascending: false })
+      .order("orden", { ascending: true })
+      .limit(6),
+  ]);
+
+  const products = (productData ?? []) as Product[];
+  const repuestos = (repuestoData ?? []) as Repuesto[];
 
   return (
-    <>
+    /* `.home` es flex column con `order` explícito (ver globals.css): en todas
+       las pantallas el catálogo va tras el hero, antes de "Cómo trabajamos". */
+    <div className="home">
       {/* HERO */}
       <section className="hero">
         <div className="container hero-grid">
@@ -60,33 +88,34 @@ export default async function Home() {
               peso en bencina
             </h1>
             <p className="lead">
-              Triciclos de carga 100% eléctricos para feriantes, repartidores y
-              pequeños negocios. Se despachan a domicilio y los pagas al
-              recibirlos.
+              Elige el color de tu triciclo de carga y lo despachamos a tu
+              domicilio en 24 horas. Pagas en efectivo cuando lo recibes, con
+              factura incluida.
             </p>
 
             <div className="hero-ctas">
+              <a className="btn btn-ghost" href="#modelos">
+                Ver modelos y precios
+              </a>
               <a
                 className="btn btn-primary"
                 href={waLink("Hola, quiero cotizar un torito eléctrico Orient Lion")}
                 target="_blank"
                 rel="noopener noreferrer"
               >
+                <WaGlyph />
                 Cotizar por WhatsApp
-              </a>
-              <a className="btn btn-ghost" href="#modelos">
-                Ver modelos y precios
               </a>
             </div>
 
             <div className="hero-stats">
               <div>
-                <span className="num">{products.length || 3}</span>
-                <span className="label">Capacidades disponibles</span>
+                <span className="num">4</span>
+                <span className="label">Colores disponibles en stock</span>
               </div>
               <div>
                 <span className="num">24h</span>
-                <span className="label">Despacho mismo día o al siguiente</span>
+                <span className="label">Despacho a domicilio</span>
               </div>
               <div>
                 <span className="num">$0</span>
@@ -95,26 +124,11 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="hero-plate">
-            <div className="plate-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="hero-photo"
-                src={HERO_IMG}
-                alt="Torito eléctrico de carga Orient Lion, hasta 1000 kg"
-                width={1050}
-                height={589}
-              />
-            </div>
-            <div className="plate-caption">
-              <span className="dot" />
-              Hasta 1000 kg de carga
-            </div>
-          </div>
+          <HeroShowcase />
         </div>
       </section>
 
-      <div className="divider" />
+      <div className="divider divider-hero" />
 
       {/* SERVICIOS */}
       <section className="section" id="servicios">
@@ -209,11 +223,28 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="models-grid">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          <ModelosClient products={products} isAdmin={isAdmin} />
+
+          {repuestos.length > 0 && (
+            <div className="home-repuestos">
+              <div className="home-repuestos-head">
+                <div>
+                  <h3>Repuestos para tu torito</h3>
+                  <p>
+                    Las piezas que más nos piden, con despacho a todo Chile.
+                  </p>
+                </div>
+                <Link className="btn btn-light btn-sm" href="/repuestos">
+                  Ver todos los repuestos
+                </Link>
+              </div>
+              <div className="rep-grid home-rep-grid">
+                {repuestos.map((r) => (
+                  <RepuestoCard key={r.id} repuesto={r} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -247,7 +278,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <div className="divider" />
+      <div className="divider divider-contacto" />
 
       {/* CONTACTO */}
       <section className="section section-alt" id="contacto">
@@ -298,6 +329,6 @@ export default async function Home() {
           <ContactForm />
         </div>
       </section>
-    </>
+    </div>
   );
 }

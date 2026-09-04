@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatCLP, waLink, type Product } from "@/lib/types";
+import { formatCLP, storageImg, waLink, type Product } from "@/lib/types";
 
 function PlaceholderTrike({ tint }: { tint: string }) {
   return (
@@ -26,7 +26,23 @@ function PlaceholderTrike({ tint }: { tint: string }) {
   );
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+type Props = {
+  product: Product;
+  isAdmin?: boolean;
+  busy?: boolean;
+  onEdit?: () => void;
+  onToggleDestacado?: () => void;
+  onToggleActivo?: () => void;
+};
+
+export default function ProductCard({
+  product,
+  isAdmin,
+  busy,
+  onEdit,
+  onToggleDestacado,
+  onToggleActivo,
+}: Props) {
   const colores =
     product.colores.length > 0
       ? product.colores
@@ -51,7 +67,39 @@ export default function ProductCard({ product }: { product: Product }) {
   const waText = `Hola, quiero cotizar el ${product.nombre}`;
 
   return (
-    <article className={"model-card" + (product.destacado ? " featured" : "")}>
+    <article
+      className={
+        "model-card" +
+        (product.destacado ? " featured" : "") +
+        (product.activo ? "" : " is-hidden")
+      }
+    >
+      {isAdmin && (
+        <div className="card-admin-bar">
+          <button type="button" onClick={onEdit} disabled={busy} title="Editar torito">
+            ✎
+          </button>
+          <button
+            type="button"
+            onClick={onToggleDestacado}
+            disabled={busy}
+            aria-pressed={product.destacado}
+            title={product.destacado ? "Quitar destacado" : "Destacar"}
+          >
+            {product.destacado ? "★" : "☆"}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleActivo}
+            disabled={busy}
+            aria-pressed={product.activo}
+            title={product.activo ? "Ocultar en la web" : "Mostrar en la web"}
+          >
+            {product.activo ? "👁" : "🚫"}
+          </button>
+        </div>
+      )}
+
       {product.destacado && (
         <span className="featured-tag">{product.destacado_texto}</span>
       )}
@@ -61,8 +109,12 @@ export default function ProductCard({ product }: { product: Product }) {
           {images.length > 0 ? (
             <img
               className="media-img"
-              src={images[photoIdx] ?? images[0]}
+              src={storageImg(images[photoIdx] ?? images[0], 800)}
               alt={`${product.nombre} ${activeColor.nombre} Orient Lion`}
+              loading="lazy"
+              decoding="async"
+              width={800}
+              height={600}
             />
           ) : (
             <div

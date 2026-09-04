@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { Product, Repuesto } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import AdminPanel from "./AdminPanel";
 
 export const dynamic = "force-dynamic";
@@ -21,22 +22,35 @@ export default async function AdminPage() {
 
   if (profile?.role !== "admin") redirect("/");
 
-  const [{ data: productData }, { data: repuestoData }] = await Promise.all([
+  const [{ data: productData }, { data: ajustesData }] = await Promise.all([
     supabase.from("products").select("*").order("orden", { ascending: true }),
-    supabase.from("repuestos").select("*").order("orden", { ascending: true }),
+    supabase
+      .from("textos_sitio")
+      .select("clave, valor")
+      .in("clave", ["boton.fuente", "boton.tamano"]),
   ]);
 
   const products = (productData ?? []) as Product[];
-  const repuestos = (repuestoData ?? []) as Repuesto[];
+  const ajustes = Object.fromEntries(
+    ((ajustesData ?? []) as { clave: string; valor: string }[]).map((r) => [
+      r.clave,
+      r.valor,
+    ]),
+  );
 
   return (
     <div className="page-wrap">
       <h1>Panel de administración</h1>
       <p className="sub">
-        Edita precios, características y fotos de los productos y repuestos, o
-        agrega uno nuevo.
+        Edita precios, características y fotos de los toritos, o agrega uno nuevo.
+        Los repuestos se editan directamente en{" "}
+        <Link href="/repuestos">la página de Repuestos</Link>.
       </p>
-      <AdminPanel initialProducts={products} initialRepuestos={repuestos} />
+      <AdminPanel
+        initialProducts={products}
+        initialButtonFont={ajustes["boton.fuente"] ?? null}
+        initialButtonSize={ajustes["boton.tamano"] ?? null}
+      />
     </div>
   );
 }

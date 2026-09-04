@@ -3,6 +3,8 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { waLink } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import { clampButtonSize, fontStackFor } from "@/lib/buttonFont";
 
 export const metadata: Metadata = {
   title: "Orient Lion Chile | Toritos Eléctricos de Carga",
@@ -10,14 +12,34 @@ export const metadata: Metadata = {
     "Toritos eléctricos de carga Orient Lion: hasta 1000 kilos, despacho a domicilio, pago contra entrega. Cotiza por WhatsApp.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Fuente y tamaño de los botones elegidos en /admin (si no hay, usa el default de globals.css).
+  const supabase = await createClient();
+  const { data: ajustes } = await supabase
+    .from("textos_sitio")
+    .select("clave, valor")
+    .in("clave", ["boton.fuente", "boton.tamano"]);
+
+  const map = Object.fromEntries((ajustes ?? []).map((r) => [r.clave, r.valor]));
+  const btnFont = map["boton.fuente"] ? fontStackFor(map["boton.fuente"]) : null;
+  const btnSize = map["boton.tamano"]
+    ? clampButtonSize(Number(map["boton.tamano"]))
+    : null;
+  const btnVars =
+    btnFont || btnSize
+      ? `:root{${btnFont ? `--btn-font:${btnFont};` : ""}${
+          btnSize ? `--btn-size:${btnSize}px;` : ""
+        }}`
+      : null;
+
   return (
     <html lang="es">
       <head>
+        {btnVars && <style>{btnVars}</style>}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
